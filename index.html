@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Lead Qualification Dashboard</title>
+    <style>
+        body {
+            background: #0B0F1A;
+            color: white;
+            font-family: Arial;
+            padding: 40px;
+            max-width: 900px;
+            margin: auto;
+        }
+        .card {
+            background: #171D2D;
+            padding: 30px;
+            border-radius: 18px;
+        }
+        h1 {
+            margin-top: 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .field {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            background: #22293B;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .score {
+            margin-top: 24px;
+            padding: 20px;
+            background: #22293B;
+            border-radius: 14px;
+        }
+        .big {
+            font-size: 42px;
+            font-weight: bold;
+        }
+        button {
+            margin-top: 15px;
+            padding: 14px 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .generate {
+            background: #B6FF3B;
+            color: black;
+        }
+        .copy {
+            background: #3B82F6;
+            color: white;
+        }
+        pre {
+            margin-top: 20px;
+            background: #111827;
+            padding: 18px;
+            border-radius: 10px;
+            overflow: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Lead Qualification Dashboard</h1>
+
+        <div class="grid">
+            <div class="field">
+                <label>Company</label>
+                <input id="company" placeholder="name of company">
+            </div>
+            <div class="field">
+                <label>City</label>
+                <input id="city" placeholder="name of city">
+            </div>
+            <div class="field">
+                <label>Instagram URL</label>
+                <input id="instagram" placeholder="profile url or N/A">
+            </div>
+            <div class="field">
+                <label>Website</label>
+                <input id="website" placeholder="url or N/A">
+            </div>
+            <div class="field">
+                <label>Contact Name</label>
+                <input id="contact" placeholder="focal person name or N/A">
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="field">
+            <label>Last Post</label>
+            <select id="lastPost">
+                <option value="2">Posted in last 7 days (+2)</option>
+                <option value="1">Posted in 8–14 days (+1)</option>
+                <option value="0">More than 14 days (0)</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Has Match Promo</label>
+            <select id="promo">
+                <option value="2">Regular match graphics (+2)</option>
+                <option value="1">Story only / occasional (+1)</option>
+                <option value="0">No match promotion (0)</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Visual Quality</label>
+            <select id="visual">
+                <option value="2">Existing graphics weak / generic (+2)</option>
+                <option value="1">Average visuals (+1)</option>
+                <option value="0">Already premium (0)</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Event Frequency</label>
+            <select id="events">
+                <option value="2">Weekly events (+2)</option>
+                <option value="1">Monthly (+1)</option>
+                <option value="0">Rare (0)</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>Engagement</label>
+            <select id="engagement">
+                <option value="2">Comments + activity visible (+2)</option>
+                <option value="1">Some engagement (+1)</option>
+                <option value="0">Dead account (0)</option>
+            </select>
+        </div>
+
+        <!-- Single score section containing everything -->
+        <div class="score">
+            <div class="big" id="score">0 / 10</div>
+            <div id="recommendation"></div>
+
+            <div class="field">
+                <label>Outreach Status</label>
+                <select id="outreach">
+                    <option>Not Contacted</option>
+                    <option>DM Sent</option>
+                    <option>Replied</option>
+                    <option>Follow Up</option>
+                    <option>Closed</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Notes</label>
+                <textarea id="notes" rows="4" placeholder="ex: weak graphics, owner active, story posted yesterday"></textarea>
+            </div>
+
+            <hr>
+
+            <div>Lead Grade: <span id="grade">—</span></div>
+            <div>Temperature: <span id="temperature">—</span></div>
+            <div>DM Today: <span id="dmStatus">—</span></div>
+            <div>Follow Up: <span id="followDate">—</span></div>
+        </div>
+
+        <button class="generate" onclick="saveLead()">Save Lead</button>
+        <button class="copy" onclick="generateJSON()">Generate JSON</button>
+        <button onclick="clearForm()">Reset</button>
+
+        <!-- Output area for JSON (previously missing) -->
+        <pre id="json"></pre>
+    </div>
+
+    <script>
+        // Get all necessary DOM elements
+        const lastPost = document.getElementById('lastPost');
+        const promo = document.getElementById('promo');
+        const visual = document.getElementById('visual');
+        const events = document.getElementById('events');
+        const engagement = document.getElementById('engagement');
+        const outreach = document.getElementById('outreach');
+        const notes = document.getElementById('notes');
+        const company = document.getElementById('company');
+        const city = document.getElementById('city');
+        const instagram = document.getElementById('instagram');
+        const website = document.getElementById('website');
+        const contact = document.getElementById('contact');
+
+        const scoreEl = document.getElementById('score');
+        const recommendationEl = document.getElementById('recommendation');
+        const gradeEl = document.getElementById('grade');
+        const temperatureEl = document.getElementById('temperature');
+        const dmStatusEl = document.getElementById('dmStatus');
+        const followDateEl = document.getElementById('followDate');
+        const jsonEl = document.getElementById('json');
+
+        // Scoring selects – attach change event to all except outreach
+        const scoringSelects = [lastPost, promo, visual, events, engagement];
+        scoringSelects.forEach(s => s.addEventListener('change', calculate));
+
+        function calculate() {
+            const total =
+                Number(lastPost.value) +
+                Number(promo.value) +
+                Number(visual.value) +
+                Number(events.value) +
+                Number(engagement.value);
+
+            scoreEl.innerText = `${total} / 10`;
+
+            let rec = '';
+            let grade = '';
+            let temp = '';
+            let dm = '';
+
+            if (total >= 9) {
+                rec = '🔥 DM Immediately';
+                grade = 'A';
+                temp = 'HOT';
+                dm = 'YES';
+            } else if (total >= 7) {
+                rec = '✅ DM Today';
+                grade = 'B';
+                temp = 'WARM';
+                dm = 'YES';
+            } else if (total >= 5) {
+                rec = '⚠️ Backlog';
+                grade = 'C';
+                temp = 'COLD';
+                dm = 'WAIT';
+            } else {
+                rec = '❌ Ignore';
+                grade = 'D';
+                temp = 'DEAD';
+                dm = 'NO';
+            }
+
+            recommendationEl.innerText = rec;
+            gradeEl.innerText = grade;
+            temperatureEl.innerText = temp;
+            dmStatusEl.innerText = dm;
+
+            // Set follow‑up date for all leads (adjust as needed)
+            const d = new Date();
+            d.setDate(d.getDate() + 3);
+            followDateEl.innerText = d.toDateString();
+        }
+
+        function generateJSON() {
+            calculate(); // ensure latest values are reflected
+
+            const data = {
+                company: company.value || 'N/A',
+                city: city.value || 'N/A',
+                instagram: instagram.value || 'N/A',
+                website: website.value || 'N/A',
+                contact: contact.value || 'N/A',
+                status: outreach.value,
+                notes: notes.value,
+                score: scoreEl.innerText,
+                grade: gradeEl.innerText,
+                temperature: temperatureEl.innerText,
+                recommendation: recommendationEl.innerText,
+                follow_up: followDateEl.innerText
+            };
+
+            jsonEl.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function saveLead() {
+            generateJSON();
+            localStorage.setItem('lastLead', jsonEl.textContent);
+            alert('Lead Saved');
+        }
+
+        function clearForm() {
+            // Clear all inputs and textareas
+            document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+            // Reset all selects to first option (scoring selects will default to +2)
+            document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+            calculate();
+        }
+
+        // Initial calculation
+        calculate();
+    </script>
+</body>
+</html>
